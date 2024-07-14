@@ -34,7 +34,7 @@ namespace CC.BabyNameDb.SourceProcessor.Extractors
 			var records = ProcessTextFiles(textFileContents);
 
 			// Store in the database
-			// Get the names
+			_logger.LogInformation("Storing names & locations in the database");
 			var existingNames = _context.Names.ToLookup(r => new { r.BabyName, r.Sex });
 			var names = records.ToLookup(r => new { r.Name, r.Sex });
 			var nameEntities = names
@@ -44,8 +44,8 @@ namespace CC.BabyNameDb.SourceProcessor.Extractors
 					Sex = n.Key.Sex
 				}).ToList();
 			_context.Names.AddRange(nameEntities);
+			_logger.LogInformation("Adding {nameCount} names to the database", nameEntities.Count);
 
-			// Get the locations
 			var existingLocations = _context.Locations
 				.Where(l => l.CountryCode == _countryCode)
 				.ToLookup(r => r.StateOrProvinceCode);
@@ -59,14 +59,22 @@ namespace CC.BabyNameDb.SourceProcessor.Extractors
 					// TODO: Fetch the state name from a lookup
 				}).ToList();
 			_context.Locations.AddRange(locationEntities);
+			_logger.LogInformation("Adding {locationCount} locations to the database", locationEntities.Count);
 
 			await _context.SaveChangesAsync();
+			_logger.LogInformation("Names & locations stored in the database");
 
 			// Get the counts
+
+			// Delete everything with this source in year counts
+			_logger.LogInformation("Deleting existing yearly counts for this source");
+			var sourceId = source.Id;
+			await _context.YearCounts.Where(yc => yc.SourceId == sourceId).ExecuteDeleteAsync();
+
+			_logger.LogInformation("Building yearly counts for each name, sex, and location");
 			var yearRecords = records.ToLookup(r => new { r.Name, r.Sex, r.State });
 			var existingNameIds = _context.Names.ToDictionary(n => new {n.BabyName, n.Sex}, n => n.Id);
 			var existingLocationIds = _context.Locations.ToDictionary(l => l.StateOrProvinceCode ?? string.Empty, l => l.Id);
-			var sourceId = source.Id;
 			var yearCountsToAdd = new List<YearCount>();
 			foreach (var set in yearRecords)
 			{
@@ -82,11 +90,11 @@ namespace CC.BabyNameDb.SourceProcessor.Extractors
 				yearCountsToAdd.AddRange(yearCounts);
 			}
 
-			// Delete everything with this source in year counts
-			await _context.YearCounts.Where(yc => yc.SourceId == sourceId).ExecuteDeleteAsync();
-
 			// Insert all the year counts
+			_logger.LogInformation("Inserting {yearCount} yearly counts to the database", yearCountsToAdd.Count);
 			await _context.BulkInsertAsync(yearCountsToAdd);
+
+			_logger.LogInformation("Processing complete");
 		}
 
 		private async Task<Dictionary<string, string>> GetTextFilesFromZip(string sourceFilePath)
