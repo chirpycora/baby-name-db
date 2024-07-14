@@ -1,9 +1,7 @@
-namespace CC.BabyNameDb.EFCore.Models
+namespace CC.BabyNameDb.SourceProcessor.Models
 {
-	public class Source
+	public class SourceConfiguration
 	{
-		public int Id { get; set; }
-
 		/// <summary>
 		/// The key used to identify the data source, used for processing
 		/// </summary>
@@ -12,15 +10,27 @@ namespace CC.BabyNameDb.EFCore.Models
 		/// <summary>
 		/// A description of the data source
 		/// </summary>
-		public string Description { get; set; } = string.Empty;
+		public string DatasetDescription { get; set; } = string.Empty;
 
 		/// <summary>
-		/// The date and time the data source was last synced
-		public DateTime LastSyncedUtc { get; set; }
+		/// The title of the data source
+		/// </summary>
+		public string DatasetName { get; set; } = string.Empty;
 
+		/// <summary>
+		/// The name of the file containing the data
+		/// </summary>
+		public string FileName { get; set; } = string.Empty;
+
+		/// <summary>
+		/// The URL of the file containing the data
+		/// </summary>
+		public string FileUrl { get; set; } = string.Empty;/// <summary>
+		
 		/// <summary>
 		/// The date of the last update, as specified by the data provider
-		public DateTime? LastUpdatedUtc { get; set; }
+		/// </summary>
+		public DateTime? LastUpdatedDate { get; set; }
 
 		/// <summary>
 		/// The copyright that applies to the data source
@@ -41,15 +51,5 @@ namespace CC.BabyNameDb.EFCore.Models
 		/// The public URL of the data source
 		/// </summary>
 		public string PublicUrl { get; set; } = string.Empty;
-
-		/// <summary>
-		/// The title of the data source
-		/// </summary>
-		public string Title { get; set; } = string.Empty;
-
-		/// <summary>
-		/// Yearly counts of the name
-		/// </summary>
-		public List<YearCount> YearCounts { get; set; } = new List<YearCount>();
 	}
 }
