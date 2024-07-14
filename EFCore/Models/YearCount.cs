@@ -1,5 +1,8 @@
+using Microsoft.EntityFrameworkCore;
+
 namespace CC.BabyNameDb.EFCore.Models
 {
+	[Index(nameof(NameId), nameof(LocationId))]
 	public class YearCount
 	{
 		public int Id { get; set; }

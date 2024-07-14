@@ -1,5 +1,8 @@
+using Microsoft.EntityFrameworkCore;
+
 namespace CC.BabyNameDb.EFCore.Models
 {
+	[Index(nameof(CountryCode), nameof(StateOrProvinceCode))]
 	public class Location
 	{
 		public int Id { get; set; }
