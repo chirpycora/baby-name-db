@@ -17,6 +17,9 @@ namespace CC.BabyNameDb.SourceProcessor.Extractors
 		private readonly BabyNameContext _context = db;
 		private readonly ILogger _logger = logger;
 
+		private readonly string _countryCode = "US";
+		private readonly string _countryName = "United States";
+
 		public List<string> SupportedKeys => new() { "us-ssa-national", "us-ssa-states" };
 
 		public async Task ExtractSource(Source source, string sourceFilePath)
@@ -54,8 +57,46 @@ namespace CC.BabyNameDb.SourceProcessor.Extractors
 					Sex = n.Key.Sex
 				}).ToList();
 			_context.Names.AddRange(nameEntities);
+
+			// Get the locations
+			var existingLocations = _context.Locations
+				.Where(l => l.CountryCode == _countryCode)
+				.ToLookup(r => r.StateOrProvinceCode);
+			var locations = records.ToLookup(r => r.State);
+			var locationEntities = locations
+				.Where(l => !existingLocations.Contains(l.Key))
+				.Select(l => new Location {
+					CountryCode = _countryCode,
+					CountryName = _countryName,
+					StateOrProvinceCode = l.Key,
+					// TODO: Fetch the state name from a lookup
+				}).ToList();
+			_context.Locations.AddRange(locationEntities);
+
 			_context.SaveChanges();
 
+			// Get the counts
+			var yearRecords = records.ToLookup(r => new { r.Name, r.Sex, r.State });
+			existingNames = _context.Names.ToLookup(r => new { r.BabyName, r.Sex });
+			existingLocations = _context.Locations
+				.Where(l => l.CountryCode == _countryCode)
+				.ToLookup(r => r.StateOrProvinceCode);
+			foreach (var set in yearRecords)
+			{
+				var name = existingNames[new { BabyName = set.Key.Name, Sex = set.Key.Sex }].First();
+				var location = existingLocations[set.Key.State].First();
+				var yearCounts = set.Select(r => new YearCount {
+					Count = r.Count,
+					Location = location,
+					Name = name,
+					Year = r.Year,
+					Source = source
+				}).ToList();
+				_context.YearCounts.AddRange(yearCounts);
+				_context.SaveChanges();
+			}
+
+			
 			throw new NotImplementedException();
 		}
 		private static List<Record> ProcessTextFile(Dictionary<string, string> textFileContents, Source source)
