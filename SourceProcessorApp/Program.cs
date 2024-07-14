@@ -11,28 +11,37 @@ internal class Program
 		ILogger logger = factory.CreateLogger("Program");
 
 		var sourceOption = new Option<DirectoryInfo?>
-			("--source", "The path to the source data.") { IsRequired = true };
+			("--source", "The path to the source data.");
 
-        var outputOption = new Option<FileInfo?>(
-            name: "--output",
-            description: "The location to save the Sqlite DB to.") { IsRequired = true };
+		var outputOption = new Option<FileInfo?>(
+			name: "--output",
+			description: "The location to save the Sqlite DB to.");
 
 		var rootCommand = new RootCommand("Processes a source of baby name data") { sourceOption, outputOption };
 
 		rootCommand.SetHandler(async (sourceOptionValue, outputOptionValue) =>
 		{
-			if (sourceOptionValue == null)
-			{
-				logger.LogError("No source provided.");
-				return;
-			}
+			var currentDirectory = new FileInfo(AppContext.BaseDirectory);
+			
 			var outputLocation = outputOptionValue?.FullName;
 			if (outputLocation == null)
 			{
-				var currentDirectory = new FileInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).Directory;
 				outputLocation = Path.Combine(currentDirectory!.FullName, "babynames.db");				
 			}
-			await ProcessSource(logger, sourceOptionValue, outputLocation);
+			
+			var sourcePath = sourceOptionValue?.FullName;
+			if (sourcePath == null)
+			{
+				// Process all sources in Sources folder
+				sourcePath = Path.Combine(currentDirectory!.FullName, "Sources");
+				var allSources = new DirectoryInfo(sourcePath).EnumerateDirectories();
+				foreach (var source in allSources)
+				{
+					await ProcessSource(logger, source, outputLocation);
+				}
+			} else {
+				await ProcessSource(logger, sourceOptionValue!, outputLocation);
+			}
 		},
 		sourceOption, outputOption);
 

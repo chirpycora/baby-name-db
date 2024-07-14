@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using CC.BabyNameDb.EFCore;
+using CC.BabyNameDb.EFCore.Helpers;
 using CC.BabyNameDb.EFCore.Models;
 using CC.BabyNameDb.SourceProcessor.Extractors;
 using EFCore.BulkExtensions;
@@ -56,7 +57,7 @@ namespace CC.BabyNameDb.SourceProcessor.Extractors
 					CountryCode = _countryCode,
 					CountryName = _countryName,
 					StateOrProvinceCode = l.Key,
-					// TODO: Fetch the state name from a lookup
+					StateOrProvinceName = l.Key?.ToStateName()
 				}).ToList();
 			_context.Locations.AddRange(locationEntities);
 			_logger.LogInformation("Adding {locationCount} locations to the database", locationEntities.Count);
