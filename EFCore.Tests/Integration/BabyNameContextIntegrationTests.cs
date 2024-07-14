@@ -12,7 +12,8 @@ public class BabyNameContextIntegrationTests
 	[TestMethod]
 	public void DatabaseIsCreatedAndTableExists()
 	{
-		using var connection = new SqliteConnection("DataSource=:memory:");
+		// using var connection = new SqliteConnection("DataSource=:memory:");
+		using var connection = new SqliteConnection(@"DataSource=E:\babyname.db");
 		connection.Open();
 
 		// Arrange

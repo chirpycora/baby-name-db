@@ -41,5 +41,10 @@ namespace CC.BabyNameDb.EFCore.Models
 		/// The title of the data source
 		/// </summary>
 		public string Title { get; set; } = string.Empty;
+
+		/// <summary>
+		/// Yearly counts of the name
+		/// </summary>
+		public List<YearCount> YearCounts { get; set; } = new List<YearCount>();
 	}
 }
