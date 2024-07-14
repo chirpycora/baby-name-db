@@ -4,6 +4,11 @@
     <ProjectReference Include="..\EFCore\CC.BabyNameDb.EFCore.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="FlexLabs.EntityFrameworkCore.Upsert" Version="8.0.0" />
+    <PackageReference Include="Sep" Version="0.5.3" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

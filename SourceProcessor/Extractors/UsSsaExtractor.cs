@@ -2,7 +2,9 @@ using System.IO.Compression;
 using CC.BabyNameDb.EFCore;
 using CC.BabyNameDb.EFCore.Models;
 using CC.BabyNameDb.SourceProcessor.Extractors;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using nietras.SeparatedValues;
 
 namespace CC.BabyNameDb.SourceProcessor.Extractors
 {
@@ -21,6 +23,8 @@ namespace CC.BabyNameDb.SourceProcessor.Extractors
 		{
 			_logger.LogInformation("Extracting source from {sourcePath}", sourceFilePath);
 
+			var textFileContents = new Dictionary<string, string>();
+
 			// Open the zip file
 			using (var archive = ZipFile.OpenRead(sourceFilePath)) {
 				foreach (var entry in archive.Entries)
@@ -30,41 +34,62 @@ namespace CC.BabyNameDb.SourceProcessor.Extractors
 						using (StreamReader sr = new(entry.Open()))
 						{
 							var file = await sr.ReadToEndAsync();
+							textFileContents.Add(entry.FullName, file);
 						}
 					}
 				}
 			}
 
-			// // Extract the data from the source ZIP file
+			// Process the text files
+			var records = ProcessTextFile(textFileContents, source);
 
-			// // Normalizes the path
-			// var extractPath = Path.GetFullPath(sourcePath);
-
-			// // Ensures that the last character on the extraction path
-			// // is the directory separator char.
-			// // Without this, a malicious zip file could try to traverse outside of the expected
-			// // extraction path
-			// if (!extractPath.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
-			// 	extractPath += Path.DirectorySeparatorChar;
-
-			// using (ZipArchive archive = ZipFile.OpenRead(zipPath))
-			// {
-			// 	foreach (ZipArchiveEntry entry in archive.Entries)
-			// 	{
-			// 		if (entry.FullName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
-			// 		{
-			// 			// Gets the full path to ensure that relative segments are removed.
-			// 			string destinationPath = Path.GetFullPath(Path.Combine(extractPath, entry.FullName));
-
-			// 			// Ordinal match is safest, case-sensitive volumes can be mounted within volumes that
-			// 			// are case-insensitive.
-			// 			if (destinationPath.StartsWith(extractPath, StringComparison.Ordinal))
-			// 				entry.ExtractToFile(destinationPath);
-			// 		}
-			// 	}
-			// }
+			// Store in the database
+			// Get the names
+			var existingNames = _context.Names.ToLookup(r => new { r.BabyName, r.Sex });
+			var names = records.ToLookup(r => new { r.Name, r.Sex });
+			var nameEntities = names
+				.Where(n => !existingNames.Contains(new { BabyName = n.Key.Name, n.Key.Sex }))
+				.Select(n => new Name {
+					BabyName = n.Key.Name,
+					Sex = n.Key.Sex
+				}).ToList();
+			_context.Names.AddRange(nameEntities);
+			_context.SaveChanges();
 
 			throw new NotImplementedException();
 		}
+		private static List<Record> ProcessTextFile(Dictionary<string, string> textFileContents, Source source)
+		{
+			var records = new List<Record>();
+			foreach (var file in textFileContents)
+			{
+				using var reader = Sep.Reader().FromText(file.Value);  // Sep is a library for reading separated values
+				foreach (var row in reader)
+				{
+					records.Add(new Record(row));
+				}
+			}
+			return records;
+		}
+	}
+
+	internal class Record {
+
+		internal Record() { }
+
+		internal Record(SepReader.Row row)
+		{
+			State = row[0].Parse<string>();
+			Sex = row[1].Parse<string>();
+			Year = row[2].Parse<int>();
+			Name = row[3].Parse<string>().Trim();
+			Count = row[4].Parse<int>();
+		}
+
+		public string Name { get; set; } = string.Empty;
+		public string State { get; set; } = string.Empty;
+		public int Year { get; set; }
+		public int Count { get; set; }
+		public string Sex { get; set; } = string.Empty;
 	}
 }
