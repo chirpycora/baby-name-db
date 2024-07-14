@@ -1,0 +1,12 @@
+{
+	"key": "us-ssa-states",
+	"organizationName": "US Social Security Administration",
+	"datasetName": "Baby Names from Social Security Card Applications - State and District of Columbia Data",
+	"datasetDescription": "The data (name, year of birth, sex, state, and number) are from a 100 percent sample of Social Security card applications starting with 1910. National data is in another dataset. For more details, see https://www.ssa.gov/oact/babynames/background.html",
+	"publicUrl": "https://catalog.data.gov/dataset/baby-names-from-social-security-card-applications-state-and-district-of-columbia-data",
+	"licenseName": "Creative Commons CCZero",
+	"licenseUrl": "http://www.opendefinition.org/licenses/cc-zero",
+	"fileUrl": "https://www.ssa.gov/oact/babynames/state/namesbystate.zip",
+	"fileName": "namesbystate.zip",
+	"lastUpdatedDate": "2024-03-26"
+}
