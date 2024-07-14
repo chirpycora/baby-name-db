@@ -7,6 +7,6 @@ namespace CC.BabyNameDb.SourceProcessor.Extractors
 	{
 		public List<string> SupportedKeys { get; }
 
-		Task ExtractSource(string sourcePath);
+		Task ExtractSource(Source source, string sourcePath);
 	}
 }

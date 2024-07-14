@@ -49,14 +49,16 @@ public class ProcessingService
 
 		// Extract the data from the source
 		try {
-			var extractors = new List<ISourceExtractor> { new UsSsaExtractor(_context) };
+			var extractors = new List<ISourceExtractor> { 
+				new UsSsaExtractor(_context, _logger) 
+			};
 			var extractor = extractors.FirstOrDefault(e => e.SupportedKeys.Contains(sourceConfiguration.Key));
 			if (extractor == null)
 			{
 				_logger.LogError("No extractor found for source {sourceKey}", sourceConfiguration.Key);
 				return;
 			}
-			await extractor.ExtractSource(sourcePath);
+			await extractor.ExtractSource(source, Path.Combine(sourcePath, sourceConfiguration.FileName));
 		} catch (Exception ex) {
 			_logger.LogError(ex, "Error extracting source {sourceKey}", sourceConfiguration.Key);
 			return;
@@ -103,7 +105,7 @@ public class ProcessingService
 		{
 			_logger.LogInformation("Updating existing source {sourceKey}", sourceCfg.Key);
 		}
-		
+
 		source.Key = sourceCfg.Key;
 		source.LastSyncedUtc = DateTime.UtcNow;
 		source.LastUpdatedUtc = sourceCfg.LastUpdatedDate;
