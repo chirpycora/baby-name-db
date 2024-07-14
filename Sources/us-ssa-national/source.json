@@ -1,0 +1,12 @@
+{
+	"key": "us-ssa-national",
+	"organizationName": "US Social Security Administration",
+	"datasetName": "Baby Names from Social Security Card Applications - National Data",
+	"datasetDescription": "The data (name, year of birth, sex, and number) are from a 100 percent sample of Social Security card applications for 1880 onward. For more details, see https://www.ssa.gov/oact/babynames/background.html",
+	"publicUrl": "https://catalog.data.gov/dataset/baby-names-from-social-security-card-applications-national-data",
+	"licenseName": "Creative Commons CCZero",
+	"licenseUrl": "http://www.opendefinition.org/licenses/cc-zero",
+	"fileUrl": "https://www.ssa.gov/oact/babynames/names.zip",
+	"fileName": "names.zip",
+	"lastUpdatedDate": "2024-03-26"
+}
