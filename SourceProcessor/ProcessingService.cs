@@ -68,7 +68,8 @@ public class ProcessingService
 		// Load the source configuration
 		var sourceConfigPath = Path.Combine(sourcePath, "source.json");
 		var sourceConfig = await File.ReadAllTextAsync(sourceConfigPath);
-		var sourceConfiguration = JsonSerializer.Deserialize<SourceConfiguration>(sourceConfig);
+		var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+		var sourceConfiguration = JsonSerializer.Deserialize<SourceConfiguration>(sourceConfig, opts);
 
 		// Validate source file
 		if (sourceConfiguration == null)
@@ -95,28 +96,23 @@ public class ProcessingService
 		if (source == null)
 		{
 			_logger.LogInformation("Adding new source {sourceKey}", sourceCfg.Key);
-			source = new Source
-			{
-				Key = sourceCfg.Key,
-				Description = sourceCfg.DatasetDescription,
-				Title = sourceCfg.DatasetName,
-				LicenseName = sourceCfg.LicenseName,
-				LicenseUrl = sourceCfg.LicenseUrl,
-				OrganizationName = sourceCfg.OrganizationName,
-				PublicUrl = sourceCfg.PublicUrl
-			};
+			source = new Source();
 			_context.Sources.Add(source);
 		}
 		else
 		{
 			_logger.LogInformation("Updating existing source {sourceKey}", sourceCfg.Key);
-			source.Description = sourceCfg.DatasetDescription;
-			source.Title = sourceCfg.DatasetName;
-			source.LicenseName = sourceCfg.LicenseName;
-			source.LicenseUrl = sourceCfg.LicenseUrl;
-			source.OrganizationName = sourceCfg.OrganizationName;
-			source.PublicUrl = sourceCfg.PublicUrl;
 		}
+		
+		source.Key = sourceCfg.Key;
+		source.LastSyncedUtc = DateTime.UtcNow;
+		source.LastUpdatedUtc = sourceCfg.LastUpdatedDate;
+		source.Description = sourceCfg.DatasetDescription;
+		source.Title = sourceCfg.DatasetName;
+		source.LicenseName = sourceCfg.LicenseName;
+		source.LicenseUrl = sourceCfg.LicenseUrl;
+		source.OrganizationName = sourceCfg.OrganizationName;
+		source.PublicUrl = sourceCfg.PublicUrl;
 
 		// Save changes to sources
 		await _context.SaveChangesAsync();
