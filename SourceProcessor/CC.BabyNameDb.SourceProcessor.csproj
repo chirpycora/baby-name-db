@@ -5,7 +5,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FlexLabs.EntityFrameworkCore.Upsert" Version="8.0.0" />
+    <PackageReference Include="EFCore.BulkExtensions" Version="8.0.4" />
     <PackageReference Include="Sep" Version="0.5.3" />
   </ItemGroup>
 

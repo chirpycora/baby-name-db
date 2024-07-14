@@ -2,6 +2,7 @@ using System.IO.Compression;
 using CC.BabyNameDb.EFCore;
 using CC.BabyNameDb.EFCore.Models;
 using CC.BabyNameDb.SourceProcessor.Extractors;
+using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using nietras.SeparatedValues;
@@ -73,31 +74,33 @@ namespace CC.BabyNameDb.SourceProcessor.Extractors
 				}).ToList();
 			_context.Locations.AddRange(locationEntities);
 
-			_context.SaveChanges();
+			await _context.SaveChangesAsync();
 
 			// Get the counts
 			var yearRecords = records.ToLookup(r => new { r.Name, r.Sex, r.State });
-			existingNames = _context.Names.ToLookup(r => new { r.BabyName, r.Sex });
-			existingLocations = _context.Locations
-				.Where(l => l.CountryCode == _countryCode)
-				.ToLookup(r => r.StateOrProvinceCode);
+			var existingNameIds = _context.Names.ToDictionary(n => new {n.BabyName, n.Sex}, n => n.Id);
+			var existingLocationIds = _context.Locations.ToDictionary(l => l.StateOrProvinceCode!, l => l.Id);
+			var sourceId = source.Id;
+			var yearCountsToAdd = new List<YearCount>();
 			foreach (var set in yearRecords)
 			{
-				var name = existingNames[new { BabyName = set.Key.Name, Sex = set.Key.Sex }].First();
-				var location = existingLocations[set.Key.State].First();
+				var name = existingNameIds[new { BabyName = set.Key.Name, Sex = set.Key.Sex }];
+				var location = existingLocationIds[set.Key.State];
 				var yearCounts = set.Select(r => new YearCount {
 					Count = r.Count,
-					Location = location,
-					Name = name,
+					LocationId = location,
+					NameId = name,
 					Year = r.Year,
-					Source = source
+					SourceId = sourceId
 				}).ToList();
-				_context.YearCounts.AddRange(yearCounts);
-				_context.SaveChanges();
+				yearCountsToAdd.AddRange(yearCounts);
 			}
 
-			
-			throw new NotImplementedException();
+			// Delete everything with this source in year counts
+			await _context.YearCounts.Where(yc => yc.SourceId == sourceId).ExecuteDeleteAsync();
+
+			// Insert all the year counts
+			await _context.BulkInsertAsync(yearCountsToAdd);
 		}
 		private static List<Record> ProcessTextFile(Dictionary<string, string> textFileContents, Source source)
 		{
