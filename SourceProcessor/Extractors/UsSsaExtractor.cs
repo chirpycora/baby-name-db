@@ -27,25 +27,11 @@ namespace CC.BabyNameDb.SourceProcessor.Extractors
 		{
 			_logger.LogInformation("Extracting source from {sourcePath}", sourceFilePath);
 
-			var textFileContents = new Dictionary<string, string>();
-
-			// Open the zip file
-			using (var archive = ZipFile.OpenRead(sourceFilePath)) {
-				foreach (var entry in archive.Entries)
-				{
-					if (entry.FullName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
-					{
-						using (StreamReader sr = new(entry.Open()))
-						{
-							var file = await sr.ReadToEndAsync();
-							textFileContents.Add(entry.FullName, file);
-						}
-					}
-				}
-			}
+			// Get the text files from the zip
+			var textFileContents = await GetTextFilesFromZip(sourceFilePath);
 
 			// Process the text files
-			var records = ProcessTextFile(textFileContents, source);
+			var records = ProcessTextFiles(textFileContents);
 
 			// Store in the database
 			// Get the names
@@ -79,13 +65,13 @@ namespace CC.BabyNameDb.SourceProcessor.Extractors
 			// Get the counts
 			var yearRecords = records.ToLookup(r => new { r.Name, r.Sex, r.State });
 			var existingNameIds = _context.Names.ToDictionary(n => new {n.BabyName, n.Sex}, n => n.Id);
-			var existingLocationIds = _context.Locations.ToDictionary(l => l.StateOrProvinceCode!, l => l.Id);
+			var existingLocationIds = _context.Locations.ToDictionary(l => l.StateOrProvinceCode ?? string.Empty, l => l.Id);
 			var sourceId = source.Id;
 			var yearCountsToAdd = new List<YearCount>();
 			foreach (var set in yearRecords)
 			{
 				var name = existingNameIds[new { BabyName = set.Key.Name, Sex = set.Key.Sex }];
-				var location = existingLocationIds[set.Key.State];
+				var location = existingLocationIds[set.Key.State ?? string.Empty];
 				var yearCounts = set.Select(r => new YearCount {
 					Count = r.Count,
 					LocationId = location,
@@ -102,15 +88,53 @@ namespace CC.BabyNameDb.SourceProcessor.Extractors
 			// Insert all the year counts
 			await _context.BulkInsertAsync(yearCountsToAdd);
 		}
-		private static List<Record> ProcessTextFile(Dictionary<string, string> textFileContents, Source source)
+
+		private async Task<Dictionary<string, string>> GetTextFilesFromZip(string sourceFilePath)
 		{
+			_logger.LogInformation("Reading zip file from {sourcePath}", sourceFilePath);
+
+			var textFileContents = new Dictionary<string, string>();
+
+			// Open the zip file
+			using (var archive = ZipFile.OpenRead(sourceFilePath)) {
+				foreach (var entry in archive.Entries)
+				{
+					if (entry.FullName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
+					{
+						using (StreamReader sr = new(entry.Open()))
+						{
+							var file = await sr.ReadToEndAsync();
+							textFileContents.Add(entry.FullName, file);
+						}
+					}
+				}
+			}
+
+			_logger.LogInformation("Found {fileCount} text files in the zip file", textFileContents.Count);
+			return textFileContents;
+		}
+
+		private List<Record> ProcessTextFiles(Dictionary<string, string> textFileContents)
+		{
+			_logger.LogInformation("Processing text files");
+
 			var records = new List<Record>();
 			foreach (var file in textFileContents)
 			{
+				int? year = null;
+				if (file.Key.StartsWith("yob", StringComparison.OrdinalIgnoreCase))
+				{
+					year = int.Parse(file.Key.Substring(3, 4));
+				}
+
 				using var reader = Sep.Reader().FromText(file.Value);  // Sep is a library for reading separated values
 				foreach (var row in reader)
 				{
-					records.Add(new Record(row));
+					if (year != null)
+						records.Add(new Record(row, year.Value));
+					else {
+						records.Add(new Record(row));
+					}
 				}
 			}
 			return records;
@@ -121,6 +145,10 @@ namespace CC.BabyNameDb.SourceProcessor.Extractors
 
 		internal Record() { }
 
+		/// <summary>
+		/// This constructor is used for the state data
+		/// </summary>
+		/// <param name="row">The row from SepReader for the record</param>
 		internal Record(SepReader.Row row)
 		{
 			State = row[0].Parse<string>();
@@ -130,8 +158,21 @@ namespace CC.BabyNameDb.SourceProcessor.Extractors
 			Count = row[4].Parse<int>();
 		}
 
+		/// <summary>
+		/// This constructor is used for the national data
+		/// </summary>
+		/// <param name="row">The row from SepReader for the record</param>
+		/// <param name="year">The year of names</param>
+		internal Record(SepReader.Row row, int year)
+		{
+			Sex = row[1].Parse<string>();
+			Year = year;
+			Name = row[0].Parse<string>().Trim();
+			Count = row[2].Parse<int>();
+		}
+
 		public string Name { get; set; } = string.Empty;
-		public string State { get; set; } = string.Empty;
+		public string? State { get; set; } = null;
 		public int Year { get; set; }
 		public int Count { get; set; }
 		public string Sex { get; set; } = string.Empty;
