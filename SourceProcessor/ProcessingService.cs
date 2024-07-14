@@ -11,12 +11,26 @@ namespace CC.BabyNameDb.SourceProcessor;
 public class ProcessingService
 {
 	private readonly BabyNameContext _context;
-	private readonly ILogger<ProcessingService> _logger;
+	private readonly ILogger _logger;
 
-	public ProcessingService(BabyNameContext context, ILogger<ProcessingService> logger)
+	public ProcessingService(string sqliteConnectionString, ILogger logger)
+	{
+		var options = new DbContextOptionsBuilder<BabyNameContext>()
+			.UseSqlite(sqliteConnectionString)
+			.Options;
+		_context = new BabyNameContext(options);
+		_logger = logger;
+	}
+
+	public ProcessingService(BabyNameContext context, ILogger logger)
 	{
 		_context = context;
 		_logger = logger;
+	}
+
+	public async Task ProcessSource(DirectoryInfo sourcePath)
+	{
+		await ProcessSource(sourcePath.FullName);
 	}
 
 	public async Task ProcessSource(string sourcePath)
