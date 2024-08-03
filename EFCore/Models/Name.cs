@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CC.BabyNameDb.EFCore.Models
 {
+	[Index(nameof(BabyName))]
 	[Index(nameof(BabyName), nameof(Sex))]
 	public class Name
 	{
