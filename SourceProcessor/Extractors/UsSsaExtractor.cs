@@ -136,7 +136,8 @@ namespace CC.BabyNameDb.SourceProcessor.Extractors
 					year = int.Parse(file.Key.Substring(3, 4));
 				}
 
-				using var reader = Sep.Reader().FromText(file.Value);  // Sep is a library for reading separated values
+				using var reader = Sep.Reader(o => o with { HasHeader = false })
+					.FromText(file.Value);  // Sep is a library for reading separated values
 				foreach (var row in reader)
 				{
 					if (year != null)
