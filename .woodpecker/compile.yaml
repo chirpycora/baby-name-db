@@ -8,5 +8,7 @@ steps:
     commands:
       - dotnet --version
       - dotnet restore
+      - dotnet build --configuration Release
+      - dotnet publish --configuration Release --output ./publish
     # volumes:
     #   - /mnt/user/caddy-srv:/mnt/caddy-srv
