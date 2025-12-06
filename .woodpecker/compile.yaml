@@ -16,6 +16,6 @@ steps:
     commands:
       - cd ./SourceProcessorApp/publish
       - ./nameprocessor
-      - ls
-    # volumes:
-    #   - /mnt/user/caddy-srv:/mnt/caddy-srv
+      - mv babynames.db /mnt/artifacts/babynames.db
+    volumes:
+      - /mnt/user/artifacts/babynames:/mnt/artifacts
