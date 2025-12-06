@@ -6,7 +6,7 @@ steps:
   - name: Build
     image: mcr.microsoft.com/dotnet/sdk:8.0
     commands:
-      - echo "Building the project..."
       - dotnet --version
+      - dotnet restore
     # volumes:
     #   - /mnt/user/caddy-srv:/mnt/caddy-srv
