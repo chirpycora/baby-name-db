@@ -11,5 +11,10 @@ steps:
       - dotnet build --configuration Release
       - cd SourceProcessorApp
       - dotnet publish --configuration Release --output ./publish
+  - name: Process National
+    image: mcr.microsoft.com/dotnet/sdk:8.0
+    commands:
+      - cd ./SourceProcessorApp/publish
+      - ls
     # volumes:
     #   - /mnt/user/caddy-srv:/mnt/caddy-srv
