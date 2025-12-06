@@ -1,0 +1,11 @@
+when:
+  - event: push
+    branch: [main, develop]
+
+steps:
+  - name: Build
+    image: mcr.microsoft.com/dotnet/sdk:8.0
+    commands:
+      - dotnet --version
+    # volumes:
+    #   - /mnt/user/caddy-srv:/mnt/caddy-srv
