@@ -10,17 +10,23 @@ internal class Program
 		using ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
 		ILogger logger = factory.CreateLogger("Program");
 
-		var sourceOption = new Option<DirectoryInfo?>
-			("--source", "The path to the source data.");
+		var sourceOption = new Option<DirectoryInfo?>("--source")
+		{
+			Description = "The path to the source data."
+		};
 
-		var outputOption = new Option<FileInfo?>(
-			name: "--output",
-			description: "The location to save the Sqlite DB to.");
+		var outputOption = new Option<FileInfo?>("--output")
+		{
+			Description = "The location to save the Sqlite DB to."
+		};
 
 		var rootCommand = new RootCommand("Processes a source of baby name data") { sourceOption, outputOption };
 
-		rootCommand.SetHandler(async (sourceOptionValue, outputOptionValue) =>
+		rootCommand.SetAction(async (parseResult, cancellationToken) =>
 		{
+			var sourceOptionValue = parseResult.GetValue(sourceOption);
+			var outputOptionValue = parseResult.GetValue(outputOption);
+
 			var currentDirectory = new FileInfo(AppContext.BaseDirectory);
 			
 			var outputLocation = outputOptionValue?.FullName;
@@ -42,10 +48,9 @@ internal class Program
 			} else {
 				await ProcessSource(logger, sourceOptionValue!, outputLocation);
 			}
-		},
-		sourceOption, outputOption);
+		});
 
-		return await rootCommand.InvokeAsync(args);
+		return await rootCommand.Parse(args).InvokeAsync();
 	}
 
 	async static Task ProcessSource(ILogger logger, DirectoryInfo sourcePath, string outputLocation)
